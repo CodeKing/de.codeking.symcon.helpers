@@ -1,4 +1,4 @@
-# IP-Symcon 5.0 Helper Classes
+# IP-Symcon 5.x Helper Classes
 ![IP-Symcon 5.x](https://img.shields.io/badge/IP--Symcon-5.x-blue.svg)
 ![Issues](https://img.shields.io/github/issues/CodeKing/de.codeking.symcon.helpers.svg)
 ![MIT License](https://img.shields.io/github/license/CodeKingLabs/de.codeking.symcon.helpers.svg)
