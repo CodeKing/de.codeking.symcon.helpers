@@ -1,24 +1,59 @@
 <?php
 
-define('__LIBROOT__', dirname(__FILE__));
-require_once(__LIBROOT__ . '/ips.constants.php');
-
-/**
- * Class ModuleHelper
- * IP-Symcon Helper Methods
- *
- * @version     0.1
- * @category    Symcon
- * @package     de.codeking.symcon
- * @author      Frank Herrmann <frank@codeking.de>
- * @link        https://codeking.de
- * @link        https://github.com/CodeKing/de.codeking.symcon
- *
- */
-class ModuleHelper extends IPSModule
+trait ModuleHelper
 {
-    protected $prefix;
+    private $prefix;
 
+    /**
+     * apply changes, when settings form has been saved
+     */
+    public function ApplyChanges()
+    {
+        parent::ApplyChanges();
+
+        if (IPS_GetKernelRunlevel() == KR_READY) {
+            $this->onKernelReady();
+        }
+    }
+
+    /**
+     * execute, when kernel is ready
+     */
+    protected function onKernelReady()
+    {
+    }
+
+    /**
+     * Handle Kernel Messages
+     * @param int $TimeStamp
+     * @param int $SenderID
+     * @param int $Message
+     * @param array $Data
+     * @return bool|void
+     */
+    public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
+    {
+        if ($Message == IPS_KERNELMESSAGE && $Data[0] == KR_READY) {
+            IPS_Sleep(1000);
+            $this->onKernelReady();
+        }
+    }
+
+    /**
+     * @param null $sender
+     * @param string $message
+     */
+    private function _log($sender = NULL, $message = '')
+    {
+        if ($this->ReadPropertyBoolean('log')) {
+            IPS_LogMessage($sender, $message);
+        }
+    }
+
+}
+
+class ModuleHelperOld extends IPSModule
+{
     private $archive_id;
 
     protected $archive_mappings = [];
@@ -57,41 +92,6 @@ class ModuleHelper extends IPSModule
             if (strstr($profile, $this->prefix . '.' . $this->InstanceID)) {
                 IPS_DeleteVariableProfile($profile);
             }
-        }
-    }
-
-    /**
-     * apply changes, when settings form has been saved
-     */
-    public function ApplyChanges()
-    {
-        parent::ApplyChanges();
-
-        if (IPS_GetKernelRunlevel() == KR_READY) {
-            $this->onKernelReady();
-        }
-    }
-
-    /**
-     * execute, when kernel is ready
-     */
-    protected function onKernelReady()
-    {
-    }
-
-    /**
-     * Handle Kernel Messages
-     * @param int $TimeStamp
-     * @param int $SenderID
-     * @param int $Message
-     * @param array $Data
-     * @return bool|void
-     */
-    public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
-    {
-        if ($Message == IPS_KERNELMESSAGE && $Data[0] == KR_READY) {
-            IPS_Sleep(1000);
-            $this->onKernelReady();
         }
     }
 
@@ -469,17 +469,6 @@ class ModuleHelper extends IPSModule
     }
 
     /**
-     * @param null $sender
-     * @param string $message
-     */
-    protected function _log($sender = NULL, $message = '')
-    {
-        if ($this->ReadPropertyBoolean('log')) {
-            IPS_LogMessage($sender, $message);
-        }
-    }
-
-    /**
      * get identifier by needle
      * @param $needle
      * @return array
@@ -575,73 +564,5 @@ class ModuleHelper extends IPSModule
     {
         $locale = $this->_getIpsLocale();
         return in_array($locale, ['en-US', 'en-GB']) ? 'imperial' : 'metric';
-    }
-
-    /**
-     * convert data array to html table
-     * @param array $data
-     * @return array
-     */
-    protected function _convertDataTables($data = array())
-    {
-        foreach ($data AS &$values) {
-            if (isset($values['table'])) {
-                $prepend = isset($values['prepend']) ? $values['prepend'] : '';
-
-                // build table head
-                $html = <<<EOF
-                <style>
-                    .cktable th,
-                    .cktable td {
-                        padding: .5em .8em;
-                    }
-                    .cktable .th { text-align:left; white-space: nowrap; }
-                    .cktable tr.th:nth-child(odd) {background: rgba(0,0,0,0.4)}
-                    .cktable tr:nth-child(odd) {background: rgba(0,0,0,0.2)}
-                    .unicode,.unicode:link,.unicode:visited {border:0;background:transparent;padding:0;font-size:4em;cursor:pointer;color:#FFF;text-decoration:none}
-                    .unicode.play {font-size:2.5em;position:relative;top:-0.1em}
-                    .unicode.red {color:red}
-                    .separator { background: rgba(0,0,0,0.3);font-weight:bold;font-size:1.2em }
-                </style>
-                $prepend
-			<table class="cktable" cellpadding="0" cellspacing="0" width="100%">
-				<tr class="th">
-EOF;
-                foreach ($values['table']['head'] AS $th) {
-                    $options = '';
-                    if (is_array($th)) {
-                        $options = ' ' . $th[1];
-                        $th = $th[0];
-                    }
-
-                    $html .= '<th class="th"' . $options . '>' . $this->Translate($th) . '</th>';
-                }
-
-                $html .= '</tr>';
-
-                // build table body
-                foreach ($values['table']['body'] AS $tr) {
-                    $html .= '<tr>';
-                    foreach ($tr AS $td) {
-                        $options = '';
-                        if (is_array($td)) {
-                            $options = ' ' . $td[1];
-                            $td = $td[0];
-                        }
-
-                        $html .= '<td' . $options . '>' . $this->Translate($td) . '</td>';
-                    }
-
-                    $html .= '</tr>';
-                }
-
-                $html .= '</table>';
-
-                // replace value with html
-                $values = $html;
-            }
-        }
-
-        return $data;
     }
 }
