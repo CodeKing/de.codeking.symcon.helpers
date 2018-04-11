@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Helper trait to provide system-wide constants below IP-Symcon 5.0
+ * Helper class to provide system-wide constants below IP-Symcon 5.0
  */
-trait SymconHelper
+class SymconHelper
 {
-    public function __construct()
+    public static function loadConstants()
     {
         if (@constant('IPS_BASE') == null) {
             // --- BASE MESSAGE
