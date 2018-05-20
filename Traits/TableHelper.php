@@ -11,7 +11,7 @@ trait TableHelper
      * @param array $data
      * @return array
      */
-    protected function convertDataTables($data = array())
+    protected function convertDataTables($data = [])
     {
         foreach ($data AS &$values) {
             if (isset($values['table'])) {

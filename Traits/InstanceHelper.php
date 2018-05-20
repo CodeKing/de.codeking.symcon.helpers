@@ -6,8 +6,14 @@
 trait InstanceHelper
 {
     /**
+     * execute, when kernel is ready
+     */
+    protected function onKernelReady()
+    {
+    }
+
+    /**
      * Interne Funktion des SDK.
-     *
      * @access public
      */
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
@@ -20,18 +26,24 @@ trait InstanceHelper
             case IM_DISCONNECT:
             case IPS_KERNELSTARTED:
                 $this->RegisterParent();
-                if ($this->HasActiveParent()) {
-                    $this->IOChangeState(IS_ACTIVE);
-                } else {
-                    $this->IOChangeState(IS_INACTIVE);
+                if (method_exists($this, 'IOChangeState')) {
+                    if ($this->HasActiveParent()) {
+                        $this->IOChangeState(IS_ACTIVE);
+                    } else {
+                        $this->IOChangeState(IS_INACTIVE);
+                    }
                 }
                 break;
             case IM_CHANGESTATUS:
-                if ($SenderID == $this->ParentID) {
+                if (method_exists($this, 'IOChangeState') && $SenderID == $this->GetParentId()) {
                     $this->IOChangeState($Data[0]);
                 }
                 break;
         endswitch;
+
+        if ($Message == IPS_KERNELMESSAGE && $Data[0] == KR_READY) {
+            $this->onKernelReady();
+        }
     }
 
     /**
@@ -43,7 +55,7 @@ trait InstanceHelper
      */
     protected function RegisterParent()
     {
-        $OldParentId = $this->ParentID;
+        $OldParentId = $this->GetParentId();
         $ParentId = @IPS_GetInstance($this->InstanceID)['ConnectionID'];
         if ($ParentId <> $OldParentId) {
             if ($OldParentId > 0) {
@@ -70,7 +82,6 @@ trait InstanceHelper
             } else {
                 $ParentId = 0;
             }
-            $this->ParentID = $ParentId;
         }
 
         return $ParentId;
@@ -84,15 +95,33 @@ trait InstanceHelper
      */
     protected function HasActiveParent()
     {
-        $instance = @IPS_GetInstance($this->InstanceID);
-        if ($instance['ConnectionID'] > 0) {
-            $parent = IPS_GetInstance($instance['ConnectionID']);
+        if ($ParentID = $this->GetParentId()) {
+            $parent = IPS_GetInstance($ParentID);
             if ($parent['InstanceStatus'] == 102) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    protected function GetParentId()
+    {
+        $instance = @IPS_GetInstance($this->InstanceID);
+        return $instance['ConnectionID'];
+    }
+
+    /**
+     * Reconnect parent socket
+     * @param bool $force
+     */
+    public function ReconnectParentSocket($force = false)
+    {
+        $ParentID = $this->GetParentId();
+        if (($this->HasActiveParent() || $force) && $ParentID > 0) {
+            IPS_SetProperty($ParentID, 'Open', true);
+            @IPS_ApplyChanges($ParentID);
+        }
     }
 
     /**
@@ -117,5 +146,38 @@ trait InstanceHelper
         }
 
         return false;
+    }
+
+    /**
+     * Register a webhook
+     * @param string $webhook
+     * @param bool $delete
+     */
+    protected function RegisterWebhook($webhook, $delete = false)
+    {
+        $ids = IPS_GetInstanceListByModuleID("{015A6EB8-D6E5-4B93-B496-0D3F77AE9FE1}");
+
+        if (sizeof($ids) > 0) {
+            $hooks = json_decode(IPS_GetProperty($ids[0], "Hooks"), true);
+            $found = false;
+            foreach ($hooks AS $index => $hook) {
+                if ($hook['Hook'] == $webhook) {
+                    if ($hook['TargetID'] == $this->InstanceID && !$delete)
+                        return;
+                    elseif ($delete && $hook['TargetID'] == $this->InstanceID) {
+                        continue;
+                    }
+
+                    $hooks[$index]['TargetID'] = $this->InstanceID;
+                    $found = true;
+                }
+            }
+            if (!$found) {
+                $hooks[] = ["Hook" => $webhook, "TargetID" => $this->InstanceID];
+            }
+
+            IPS_SetProperty($ids[0], "Hooks", json_encode($hooks));
+            IPS_ApplyChanges($ids[0]);
+        }
     }
 }

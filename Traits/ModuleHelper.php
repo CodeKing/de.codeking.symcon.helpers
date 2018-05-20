@@ -3,6 +3,12 @@
 trait ModuleHelper
 {
     private $prefix;
+    private $archive_id;
+
+    protected $archive_mappings = [];
+    protected $profile_mappings = [];
+    protected $hidden_mappings = [];
+    protected $icon_mappings = [];
 
     /**
      * apply changes, when settings form has been saved
@@ -17,103 +23,17 @@ trait ModuleHelper
     }
 
     /**
-     * execute, when kernel is ready
-     */
-    protected function onKernelReady()
-    {
-    }
-
-    /**
-     * Handle Kernel Messages
-     * @param int $TimeStamp
-     * @param int $SenderID
-     * @param int $Message
-     * @param array $Data
-     * @return bool|void
-     */
-    public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
-    {
-        if ($Message == IPS_KERNELMESSAGE && $Data[0] == KR_READY) {
-            IPS_Sleep(1000);
-            $this->onKernelReady();
-        }
-    }
-
-    /**
      * @param null $sender
-     * @param string $message
+     * @param mixed $message
      */
-    private function _log($sender = NULL, $message = '')
+    protected function _log($sender = NULL, $message = '')
     {
         if ($this->ReadPropertyBoolean('log')) {
+            if (is_array($message)) {
+                $message = json_encode($message);
+            }
             IPS_LogMessage($sender, $message);
         }
-    }
-
-}
-
-class ModuleHelperOld extends IPSModule
-{
-    private $archive_id;
-
-    protected $archive_mappings = [];
-    protected $profile_mappings = [];
-    protected $hidden_mappings = [];
-    protected $icon_mappings = [];
-
-    protected $force_ident = false;
-
-    /**
-     * create instance
-     * @return bool|void
-     */
-    public function Create()
-    {
-        parent::Create();
-
-        // register global properties
-        $this->RegisterPropertyBoolean('log', true);
-
-        // register kernel messages
-        $this->RegisterMessage(0, IPS_KERNELMESSAGE);
-    }
-
-    /**
-     * destroy instance
-     * @return bool|void
-     */
-    public function Destroy()
-    {
-        parent::Destroy();
-
-        // remove instance profiles
-        $profiles = IPS_GetVariableProfileList();
-        foreach ($profiles AS $profile) {
-            if (strstr($profile, $this->prefix . '.' . $this->InstanceID)) {
-                IPS_DeleteVariableProfile($profile);
-            }
-        }
-    }
-
-    /**
-     * attach prefix to ident
-     * @param string $Ident
-     * @return bool
-     */
-    protected function EnableAction($Ident)
-    {
-        $Ident = $this->force_ident ? $Ident : $this->identifier($Ident);
-        $this->force_ident = false;
-
-        return parent::EnableAction($Ident);
-    }
-
-    protected function DisableAction($Ident)
-    {
-        $Ident = $this->force_ident ? $Ident : $this->identifier($Ident);
-        $this->force_ident = false;
-
-        return parent::DisableAction($Ident);
     }
 
     /**
@@ -198,6 +118,7 @@ class ModuleHelperOld extends IPSModule
      */
     protected function CreateVariableByIdentifier($options)
     {
+
         // set options
         /**
          * @var $parent_id integer
@@ -274,7 +195,7 @@ class ModuleHelperOld extends IPSModule
                 // attach module prefix to custom profile name
                 $profile_id = substr($this->profile_mappings[$name], 0, 1) == '~'
                     ? $this->profile_mappings[$name]
-                    : $this->prefix . '.' . $this->profile_mappings[$name];
+                    : $this->_getPrefix() . '.' . $this->profile_mappings[$name];
 
                 // create profile, if not exists
                 if (!IPS_VariableProfileExists($profile_id)) {
@@ -289,13 +210,30 @@ class ModuleHelperOld extends IPSModule
         if ($custom_profile) {
             $profile_id = is_string($custom_profile)
                 ? $custom_profile
-                : str_replace($this->prefix . '_', $this->prefix . '.', $identifier);
+                : (isset($custom_profile['id'])
+                    ? $custom_profile['id']
+                    : str_replace($this->_getPrefix() . '_', $this->_getPrefix() . '.', $identifier));
 
-            if (!IPS_VariableProfileExists($profile_id) && is_array($custom_profile)) {
-                IPS_CreateVariableProfile($profile_id, $type);
+            if (is_array($custom_profile)) {
+                if (!IPS_VariableProfileExists($profile_id)) {
+                    IPS_CreateVariableProfile($profile_id, $type);
+                }
 
                 if (isset($custom_profile['icon'])) {
                     IPS_SetVariableProfileIcon($profile_id, $custom_profile['icon']);
+                }
+
+                if (isset($custom_profile['prefix']) || isset($custom_profile['suffix'])) {
+                    $prefix = isset($custom_profile['prefix']) ? $custom_profile['prefix'] : '';
+                    $suffix = isset($custom_profile['suffix']) ? $custom_profile['suffix'] : '';
+                    IPS_SetVariableProfileText($profile_id, $prefix, $suffix);
+                }
+
+                if (isset($custom_profile['steps'])) {
+                    $min = isset($custom_profile['min']) ? $custom_profile['min'] : 0;
+                    $max = isset($custom_profile['max']) ? $custom_profile['max'] : 100;
+                    $steps = isset($custom_profile['steps']) ? $custom_profile['steps'] : 1;
+                    IPS_SetVariableProfileValues($profile_id, $min, $max, $steps);
                 }
 
                 if (isset($custom_profile['values']) && is_array($custom_profile['values'])) {
@@ -385,45 +323,6 @@ class ModuleHelperOld extends IPSModule
     }
 
     /**
-     * replaces special chars for identifier
-     * @param $identifier
-     * @return mixed
-     */
-    protected function identifier($identifier)
-    {
-        $identifier = strtr($identifier, [
-            '-' => '_',
-            ' ' => '_',
-            ':' => '_',
-            '(' => '',
-            ')' => '',
-            '%' => 'p'
-        ]);
-
-        return $this->prefix . '_' . $identifier;
-    }
-
-    /**
-     * get variable type by contents
-     * @param $value
-     * @return int
-     */
-    private function GetVariableType($value)
-    {
-        if (is_bool($value)) {
-            $type = 0;
-        } else if (is_int($value)) {
-            $type = 1;
-        } else if (is_float($value)) {
-            $type = 2;
-        } else {
-            $type = 3;
-        }
-
-        return $type;
-    }
-
-    /**
      * create custom variable profile
      * @param int $profile_id
      * @param string $name
@@ -436,59 +335,42 @@ class ModuleHelperOld extends IPSModule
     }
 
     /**
-     * Register a webhook
-     * @param string $webhook
-     * @param bool $delete
+     * get variable type by contents
+     * @param $value
+     * @return int
      */
-    protected function RegisterWebhook($webhook, $delete = false)
+    private function GetVariableType($value)
     {
-        $ids = IPS_GetInstanceListByModuleID("{015A6EB8-D6E5-4B93-B496-0D3F77AE9FE1}");
-
-        if (sizeof($ids) > 0) {
-            $hooks = json_decode(IPS_GetProperty($ids[0], "Hooks"), true);
-            $found = false;
-            foreach ($hooks AS $index => $hook) {
-                if ($hook['Hook'] == $webhook) {
-                    if ($hook['TargetID'] == $this->InstanceID && !$delete)
-                        return;
-                    elseif ($delete && $hook['TargetID'] == $this->InstanceID) {
-                        continue;
-                    }
-
-                    $hooks[$index]['TargetID'] = $this->InstanceID;
-                    $found = true;
-                }
-            }
-            if (!$found) {
-                $hooks[] = ["Hook" => $webhook, "TargetID" => $this->InstanceID];
-            }
-
-            IPS_SetProperty($ids[0], "Hooks", json_encode($hooks));
-            IPS_ApplyChanges($ids[0]);
+        if (is_bool($value)) {
+            $type = 0;
+        } else if (is_float($value)) {
+            $type = 2;
+        } else if (is_int($value) || (intval($value) == $value)) {
+            $type = 1;
+        } else {
+            $type = 3;
         }
+
+        return $type;
     }
 
     /**
-     * get identifier by needle
-     * @param $needle
-     * @return array
+     * replaces special chars for identifier
+     * @param $identifier
+     * @return mixed
      */
-    protected function _getIdentifierByNeedle($needle)
+    protected function identifier($identifier)
     {
-        $needle = str_replace(' ', '_', $needle);
+        $identifier = strtr($identifier, [
+            '-' => '_',
+            ' ' => '_',
+            ':' => '_',
+            '%' => 'p'
+        ]);
 
-        $idents = [];
-        if ($needle) {
-            foreach (IPS_GetChildrenIDs($this->InstanceID) AS $object_ids) {
-                $object = IPS_GetObject($object_ids);
+        $identifier = preg_replace('/[^A-Za-z0-9\.\_]/', '', $identifier);
 
-                if (strstr($object['ObjectIdent'], '_' . $needle)) {
-                    $idents[] = $object['ObjectIdent'];
-                }
-            }
-        }
-
-        return $idents;
+        return $this->_getPrefix() . '_' . $identifier;
     }
 
     /**
@@ -557,6 +439,29 @@ class ModuleHelperOld extends IPSModule
     }
 
     /**
+     * get identifier by needle
+     * @param $needle
+     * @return array
+     */
+    protected function _getIdentifierByNeedle($needle)
+    {
+        $needle = str_replace(' ', '_', $needle);
+
+        $idents = [];
+        if ($needle) {
+            foreach (IPS_GetChildrenIDs($this->InstanceID) AS $object_ids) {
+                $object = IPS_GetObject($object_ids);
+
+                if (strstr($object['ObjectIdent'], '_' . $needle)) {
+                    $idents[] = $object['ObjectIdent'];
+                }
+            }
+        }
+
+        return $idents;
+    }
+
+    /**
      * get unit system by locale
      * @return string
      */
@@ -565,4 +470,14 @@ class ModuleHelperOld extends IPSModule
         $locale = $this->_getIpsLocale();
         return in_array($locale, ['en-US', 'en-GB']) ? 'imperial' : 'metric';
     }
+
+    /**
+     * get prefix by current class name
+     * @return string
+     */
+    protected function _getPrefix()
+    {
+        return get_class($this);
+    }
+
 }

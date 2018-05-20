@@ -33,7 +33,7 @@ trait BufferHelper
         if (strpos($name, 'Multi_') === 0) {
             $OldBuffers = $this->{'BufferList_' . $name};
             if ($OldBuffers == false) {
-                $OldBuffers = array();
+                $OldBuffers = [];
             }
             $Lines = str_split($Data, 8000);
             foreach ($Lines as $BufferIndex => $BufferLine) {
