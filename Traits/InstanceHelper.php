@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Trait mit Hilfsfunktionen für den Datenaustausch.
+ * Trait with data exchange helpers
  */
 trait InstanceHelper
 {
@@ -13,8 +13,7 @@ trait InstanceHelper
     }
 
     /**
-     * Interne Funktion des SDK.
-     * @access public
+     * interact on symcon messages
      */
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
     {
@@ -47,11 +46,7 @@ trait InstanceHelper
     }
 
     /**
-     * Ermittelt den Parent und verwaltet die Einträge des Parent im MessageSink
-     * Ermöglicht es das Statusänderungen des Parent empfangen werden können.
-     *
-     * @access protected
-     * @return int ID des Parent.
+     * register parent instance
      */
     protected function RegisterParent()
     {
@@ -88,10 +83,8 @@ trait InstanceHelper
     }
 
     /**
-     * Prüft den Parent auf vorhandensein und Status.
-     *
-     * @access protected
-     * @return bool True wenn Parent vorhanden und in Status 102, sonst false.
+     * check, if module has an active parent
+     * @return bool
      */
     protected function HasActiveParent()
     {
@@ -105,6 +98,10 @@ trait InstanceHelper
         return false;
     }
 
+    /**
+     * get connected parent instance id
+     * @return mixed
+     */
     protected function GetParentId()
     {
         $instance = @IPS_GetInstance($this->InstanceID);
@@ -112,7 +109,7 @@ trait InstanceHelper
     }
 
     /**
-     * Reconnect parent socket
+     * reconnect parent socket
      * @param bool $force
      */
     public function ReconnectParentSocket($force = false)
@@ -125,7 +122,7 @@ trait InstanceHelper
     }
 
     /**
-     * Destroy instance by guid and identifier
+     * destroy instance by guid and identifier
      * @param null $guid
      * @param null $Ident
      * @return bool
@@ -149,7 +146,7 @@ trait InstanceHelper
     }
 
     /**
-     * Register a webhook
+     * register a webhook
      * @param string $webhook
      * @param bool $delete
      */
