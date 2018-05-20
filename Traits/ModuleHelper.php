@@ -17,7 +17,7 @@ trait ModuleHelper
     {
         parent::ApplyChanges();
 
-        if (IPS_GetKernelRunlevel() == KR_READY) {
+        if (IPS_GetKernelRunlevel() == KR_READY && method_exists($this, 'onKernelReady')) {
             $this->onKernelReady();
         }
     }
