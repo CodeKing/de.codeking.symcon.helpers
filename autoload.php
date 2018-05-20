@@ -13,8 +13,8 @@ spl_autoload_register(function ($className) {
     }
 
     // find in traits dir
-    if (file_exists($helperDir . 'Traits/' . $file)) {
-        require_once $helperDir . 'Traits/' . $file;
+    if (file_exists($helperDir . DIRECTORY_SEPARATOR . 'Traits' . $file)) {
+        require_once $helperDir . DIRECTORY_SEPARATOR . 'Traits' . $file;
     }
 
     // find in libs dir
