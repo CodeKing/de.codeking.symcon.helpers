@@ -33,8 +33,8 @@ find ../ -type d -iname "de.codeking.symcon.*" -print0 | while IFS= read -r -d $
 
     if [ $PUSH -eq 1 ]; then
         git commit -a -m "helpers updated" &> /dev/null
-        git remote set-url origin https://github.com/CodeKing/${project}.git
-        git push -u origin master
+        git remote set-url origin https://github.com/CodeKing/${project}.git &> /dev/null
+        git push -u origin master &> /dev/null
     fi
 
     echo -e "${GREEN}done!${NC}"
