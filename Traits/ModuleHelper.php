@@ -324,10 +324,10 @@ trait ModuleHelper
 
     /**
      * create custom variable profile
-     * @param int $profile_id
+     * @param string $profile_id
      * @param string $name
      */
-    protected function CreateCustomVariableProfile($profile_id, $name)
+    protected function CreateCustomVariableProfile(string $profile_id, string $name)
     {
         /**
          * will be overwritten by each module.php
