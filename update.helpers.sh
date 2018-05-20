@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# config
 DIR=$(cd `dirname $0` && pwd)
 
 # colors
@@ -9,19 +10,34 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-# loop folders
+# prompt
+echo ""
+while true; do
+    read -p "Push to github after update? [y|n] " yn
+    case $yn in
+        [Yy]* ) PUSH=1; break;;
+        "") PUSH=1; break;;
+        [Nn]* ) PUSH=0; break;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
+
+# update git submodules
 echo ""
 find ../ -type d -iname "de.codeking.symcon.*" -print0 | while IFS= read -r -d $'\0' folder; do
-    echo -e -n "${CYAN}updating${NC} ${BOLD}$(echo $folder | cut -d'/' -f 2)${NC}... "
+    project=$(echo $folder | cut -d'/' -f 2)
+    echo -e -n "${CYAN}updating${NC} ${BOLD}${project}${NC}... "
 
     cd $folder
-    git submodule update --remote --force --quiet; changes=$?
+    git submodule update --remote --force --quiet &> /dev/null
+    echo -e "${GREEN}done!${NC}"
 
-    if [ $changes -eq 1 ]; then
-        echo -e "${GREEN}done!${NC}"
-    else
-        echo -e "${RED}up to date!${NC}"
+    if [ $PUSH -eq 1 ]; then
+        git commit -m "helpers updated"
+        git push -u origin master
     fi
 
     cd $DIR
+    exit;
 done
+
