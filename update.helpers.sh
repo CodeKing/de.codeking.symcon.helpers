@@ -2,6 +2,13 @@
 
 # config
 DIR=$(cd `dirname $0` && pwd)
+REPO=$1
+OUT=/dev/null
+
+if [ -z $REPO ]; then
+    REPO='de.codeking.symcon.*'
+    OUT=/dev/stdout
+fi
 
 # colors
 RED='\033[0;31m'
@@ -24,17 +31,17 @@ done
 
 # update git submodules
 echo ""
-find ../ -type d -iname "de.codeking.symcon.*" -print0 | while IFS= read -r -d $'\0' folder; do
+find ../ -type d -iname "${REPO}" -print0 | while IFS= read -r -d $'\0' folder; do
     project=$(echo $folder | cut -d'/' -f 2)
     echo -e -n "${CYAN}updating${NC} ${BOLD}${project}${NC}... "
 
     cd $folder
-    git submodule update --remote --force --quiet &> /dev/null
+    git submodule update --remote --force --quiet &> $OUT
 
     if [ $PUSH -eq 1 ]; then
-        git commit -a -m "helpers updated" &> /dev/null
-        git remote set-url origin https://github.com/CodeKing/${project}.git &> /dev/null
-        git push -u origin master &> /dev/null
+        git commit -a -m "helpers updated" > $OUT
+        git remote add origin https://github.com/CodeKing/${project}.git > $OUT
+        git push -u origin master > $OUT
     fi
 
     echo -e "${GREEN}done!${NC}"
