@@ -345,7 +345,7 @@ trait ModuleHelper
             $type = 0;
         } else if (is_float($value)) {
             $type = 2;
-        } else if (is_int($value) || (intval($value) == $value)) {
+        } else if (is_int($value) || (intval($value) === $value)) {
             $type = 1;
         } else {
             $type = 3;
