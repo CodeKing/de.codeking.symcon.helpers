@@ -39,9 +39,9 @@ find ../ -type d -iname "${REPO}" -print0 | while IFS= read -r -d $'\0' folder; 
     git submodule update --remote --force --quiet &> $OUT
 
     if [ $PUSH -eq 1 ]; then
-        git commit -a -m "helpers updated" > $OUT
-        git remote add origin https://github.com/CodeKing/${project}.git > $OUT
-        git push -u origin master > $OUT
+        git commit -a -m "helpers updated" &> $OUT
+        git remote add origin https://github.com/CodeKing/${project}.git &> $OUT
+        git push -u origin master &> $OUT
     fi
 
     echo -e "${GREEN}done!${NC}"
