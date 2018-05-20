@@ -30,14 +30,13 @@ find ../ -type d -iname "de.codeking.symcon.*" -print0 | while IFS= read -r -d $
 
     cd $folder
     git submodule update --remote --force --quiet &> /dev/null
-    echo -e "${GREEN}done!${NC}"
 
     if [ $PUSH -eq 1 ]; then
-        git commit -m "helpers updated"
-        git push -u origin master
+        git commit -a -m "helpers updated" &> /dev/null
+        git push -u origin master &> /dev/null
     fi
 
+    echo -e "${GREEN}done!${NC}"
     cd $DIR
-    exit;
 done
 
