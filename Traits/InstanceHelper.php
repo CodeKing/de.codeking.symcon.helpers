@@ -64,19 +64,20 @@ trait InstanceHelper
                     $this->RegisterMessage($OldParentId, IPS_KERNELSHUTDOWN);
                 }
             }
-            if ($ParentId > 0) {
-                $this->RegisterMessage($ParentId, IM_CHANGESTATUS);
-                $this->UnregisterMessage($ParentId, IM_DISCONNECT);
+        }
 
-                if ((float)IPS_GetKernelVersion() < 4.2) {
-                    $this->RegisterMessage($ParentId, IPS_KERNELMESSAGE);
-                } else {
-                    $this->RegisterMessage($ParentId, IPS_KERNELSTARTED);
-                    $this->RegisterMessage($ParentId, IPS_KERNELSHUTDOWN);
-                }
+        if ($ParentId > 0) {
+            $this->RegisterMessage($ParentId, IM_CHANGESTATUS);
+            $this->UnregisterMessage($ParentId, IM_DISCONNECT);
+
+            if ((float)IPS_GetKernelVersion() < 4.2) {
+                $this->RegisterMessage($ParentId, IPS_KERNELMESSAGE);
             } else {
-                $ParentId = 0;
+                $this->RegisterMessage($ParentId, IPS_KERNELSTARTED);
+                $this->RegisterMessage($ParentId, IPS_KERNELSHUTDOWN);
             }
+        } else {
+            $ParentId = 0;
         }
 
         return $ParentId;
