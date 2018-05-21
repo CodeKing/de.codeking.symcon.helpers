@@ -411,6 +411,27 @@ trait ModuleHelper
     }
 
     /**
+     * find id by ident recursive
+     * @param string $Ident
+     * @return bool|int
+     */
+    protected function GetIdForIdentRecursive(string $Ident)
+    {
+        if ($id = $this->GetIdForIdent($Ident)) {
+            return $id;
+        }
+
+        $object = IPS_GetObject($this->InstanceID);
+        foreach ($object['ChildrenIDs'] AS $children_id) {
+            if ($id = IPS_GetObjectIDByIdent($Ident, $children_id)) {
+                return $id;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * get url of connect module
      * @return string
      */
