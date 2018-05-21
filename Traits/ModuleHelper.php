@@ -370,6 +370,43 @@ trait ModuleHelper
 
         $identifier = preg_replace('/[^A-Za-z0-9\.\_]/', '', $identifier);
 
+        // @depreciated fallback
+        $old_prefixes = [
+            'DC' => 'Discovergy',
+            'GF' => 'GetFresh',
+            'OF' => 'Oilfox',
+            'SMA' => 'SMAModbus',
+            'HC' => 'HomeConnectDevice',
+            'HCIO' => 'HomeConnect',
+            'NC' => 'NetatmoCamera',
+            'UNIFI' => 'Unifi'
+        ];
+
+        foreach ($old_prefixes AS $old_prefix => $new_prefix) {
+            if ($this->_getPrefix() === $new_prefix) {
+                if ($old_variable_id = @$this->GetIdForIdentRecursive($old_prefix . '_' . $identifier)) {
+                    if ($wrong_variable_id = @$this->GetIdForIdentRecursive($new_prefix . '_' . $identifier)) {
+                        $object = IPS_GetObject($wrong_variable_id);
+                        $ids_to_delete = $object['ChildrenIDs'];
+                        $ids_to_delete[] = $wrong_variable_id;
+
+                        foreach ($ids_to_delete AS $id) {
+                            $obj = IPS_GetObject($id);
+
+                            if ($obj['ObjectType']) {
+                                IPS_DeleteVariable($id);
+                            } else {
+                                IPS_DeleteCategory($id);
+                            }
+                        }
+
+                    }
+
+                    IPS_SetIdent($old_variable_id, $new_prefix . '_' . $identifier);
+                }
+            }
+        }
+
         return $this->_getPrefix() . '_' . $identifier;
     }
 
