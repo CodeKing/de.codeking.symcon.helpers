@@ -34,7 +34,7 @@ find ../ -type d -iname "${REPO}" -print0 | while IFS= read -r -d $'\0' folder; 
     echo -e -n "${CYAN}updating${NC} ${BOLD}${project}${NC}... "
 
     cd $folder
-    git submodule update --remote --force --quiet &> /dev/null
+    git --work-tree=libs/helpers/ pull -ff &> /dev/null
 
     if [ $PUSH -eq 1 ]; then
         git commit -a -m "helpers updated" &> /dev/null
